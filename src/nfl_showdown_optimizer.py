@@ -221,7 +221,29 @@ class NFL_Showdown_Optimizer:
                     else 0.1
                 )
                 if cptn_ownership == 0.1:
-                    cptn_ownership = 0.5 * ownership
+                    cptn_ownership = 0.1
+                elif cptn_ownership == 0.0 or "":
+                    cptn_ownership -- 0.01
+
+                optimal = float(row["optimal%"].replace("%", ""))
+
+                if "leverage" in row:
+                    if row["leverage"] == "" or float(row["leverage"]) == 0:
+                        leverage = 0
+                    else:
+                        leverage = float(row["leverage"])
+                else:
+                    leverage = 0
+                
+                if "cptleverage" in row:
+                    if row["cptleverage"] == "" or float(row["cptleverage"]) == 0:
+                        cpt_leverage = 0
+                    else:
+                        cpt_leverage = float(row["cptleverage"])
+                else:
+                    cpt_leverage = 0   
+
+                #alxs1234: modify cptn_ownership handling + add optimal%, leverage & cptleverage
 
                 # Assign FLEX then CPTN position for showdown
                 self.player_dict[(player_name, "FLEX", team)] = {
@@ -235,6 +257,9 @@ class NFL_Showdown_Optimizer:
                     "Team": team,
                     "Ownership": ownership,
                     "Ceiling": float(ceiling),
+                    "Optimal%": optimal,
+                    "Leverage": leverage,
+                    "CptLeverage": cpt_leverage,                    
                     "StdDev": stddev,
                 }
                 self.player_dict[(player_name, "CPT", team)] = {
@@ -250,8 +275,13 @@ class NFL_Showdown_Optimizer:
                     "Team": team,
                     "Ownership": cptn_ownership,
                     "Ceiling": 1.5 * float(ceiling),
+                    "Optimal%": optimal,
+                    "Leverage": leverage,
+                    "CptLeverage": cpt_leverage,                    
                     "StdDev": 1.5 * stddev,
                 }
+
+                #alxs1234: Add Optimal, Leverage, & CptLeverage into player_dict
 
                 if team not in self.team_list:
                     self.team_list.append(team)
@@ -783,11 +813,11 @@ class NFL_Showdown_Optimizer:
         with open(out_path, "w") as f:
             if self.site == "dk":
                 f.write(
-                    "CPT,FLEX,FLEX,FLEX,FLEX,FLEX,Salary,Fpts Proj,Fpts Used,Ceiling,Own. Product,Own. Sum,STDDEV,Stack Type\n"
+                    "CPT,FLEX,FLEX,FLEX,FLEX,FLEX,Salary,Fpts Proj,Fpts Used,Ceiling,Own. Product,Own. Sum,Optimal%,CPTLeverage,FLEXLeverage,STDDEV,Stack Type\n"
                 )
             else:
                 f.write(
-                    "MVP,FLEX,FLEX,FLEX,FLEX,Salary,Fpts Proj,Fpts Used,Ceiling,Own. Product,Own. Sum,STDDEV,Stack Type\n"
+                    "MVP,FLEX,FLEX,FLEX,FLEX,Salary,Fpts Proj,Fpts Used,Ceiling,Own. Product,Own. Sum,Optimal%,CPTLeverage,FLEXLeverage,STDDEV,Stack Type\n"
                 )
             for x, fpts_used in self.lineups:
                 team_count = {}
@@ -807,10 +837,13 @@ class NFL_Showdown_Optimizer:
                 own_p = np.prod(
                     [self.player_dict[player]["Ownership"] / 100 for player in x]
                 )
+                optimal = sum(self.player_dict[player]["Optimal%"] for player in x)
+                cpt_leverage = self.player_dict[x[0]]["CptLeverage"]
+                flex_leverage = sum(self.player_dict[player]["Leverage"] for player in x[1:])                
                 ceil = sum([self.player_dict[player]["Ceiling"] for player in x])
                 stddev = sum([self.player_dict[player]["StdDev"] for player in x])
                 lineup_str = (
-                    "{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{},{},{},{},{},{},{},{}".format(
+                    "{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{},{},{},{},{},{},{},{},{},{},{}".format(
                         self.player_dict[x[0]]["Name"],
                         self.player_dict[x[0]]["ID"],
                         self.player_dict[x[1]]["Name"],
@@ -833,7 +866,7 @@ class NFL_Showdown_Optimizer:
                         team_stack_string[:-1],
                     )
                     if self.site == "dk"
-                    else "{}:{},{}:{},{}:{},{}:{},{}:{},{},{},{},{},{},{},{},{}".format(
+                    else "{}:{},{}:{},{}:{},{}:{},{}:{},{},{},{},{},{},{},{},{},{},{},{}".format(
                         self.player_dict[x[0]]["ID"],
                         self.player_dict[x[0]]["Name"],
                         self.player_dict[x[1]]["ID"],
@@ -858,3 +891,5 @@ class NFL_Showdown_Optimizer:
                 f.write("%s\n" % lineup_str)
 
         print("Output done.")
+
+        #alxs1234: added optimal, cptleverage & flex leverage to output. 

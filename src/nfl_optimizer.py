@@ -196,6 +196,18 @@ class NFL_Optimizer:
                         ceil = float(row["ceiling"])
                 else:
                     ceil = fpts + stddev
+                
+                #alxs1234: Add Custom Columns: Optimal%, Leverage
+                optimal = float(row["optimal%"].replace("%", ""))
+                if "leverage" in row:
+                    if row["leverage"] == "" or float(row["leverage"]) == 0:
+                        leverage = 0
+                    else:
+                        leverage = float(row["leverage"])
+                else:
+                    leverage = 0
+                #alxs1234: End Add Custom
+
                 own = float(row["own%"].replace("%", ""))
                 if own == 0:
                     own = 0.1
@@ -215,7 +227,10 @@ class NFL_Optimizer:
                     "Ownership": own,
                     "Ceiling": ceil,
                     "StdDev": stddev,
+                    "Optimal%": optimal,
+                    "Leverage": leverage,
                 }
+                #alxs1234: Added Optimal & Leverage to Player Dict
 
                 if team not in self.team_list:
                     self.team_list.append(team)
@@ -851,7 +866,7 @@ class NFL_Optimizer:
         out_path = os.path.join(os.path.dirname(__file__), filename_out)
         with open(out_path, "w") as f:
             f.write(
-                "QB,RB,RB,WR,WR,WR,TE,FLEX,DST,Salary,Fpts Proj,Fpts Used,Ceiling,Own. Sum,Own. Product,STDDEV,Stack\n"
+                "QB,RB,RB,WR,WR,WR,TE,FLEX,DST,Salary,Fpts Proj,Fpts Used,Ceiling,Own. Sum,Own. Product,STDDEV,Opt. Sum,Lev. Sum,Stack\n"
             )
             for x, fpts_used in sorted_lineups:
                 stack_str = self.construct_stack_string(x)
@@ -864,8 +879,10 @@ class NFL_Optimizer:
                 )
                 ceil = sum([self.player_dict[player]["Ceiling"] for player in x])
                 stddev = sum([self.player_dict[player]["StdDev"] for player in x])
+                optimal_s = sum([self.player_dict[player]["Optimal"] for player in x])
+                leverage_s = sum([self.player_dict[player]["Leverage"] for player in x])
                 if self.site == "dk":
-                    lineup_str = "{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{},{},{},{},{},{},{},{}".format(
+                    lineup_str = "{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{} ({}),{},{},{},{},{},{},{},{},{},{}".format(
                         self.player_dict[x[0]]["Name"],
                         self.player_dict[x[0]]["ID"],
                         self.player_dict[x[1]]["Name"],
@@ -891,10 +908,12 @@ class NFL_Optimizer:
                         own_s,
                         own_p,
                         stddev,
+                        optimal_s,
+                        leverage_s,
                         stack_str,
                     )
                 else:
-                    lineup_str = "{}:{},{}:{},{}:{},{}:{},{}:{},{}:{},{}:{},{}:{},{}:{},{},{},{},{},{},{},{},{}".format(
+                    lineup_str = "{}:{},{}:{},{}:{},{}:{},{}:{},{}:{},{}:{},{}:{},{}:{},{},{},{},{},{},{},{},{},{},{}".format(
                         self.player_dict[x[0]]["ID"],
                         self.player_dict[x[0]]["Name"],
                         self.player_dict[x[1]]["ID"],
@@ -920,11 +939,15 @@ class NFL_Optimizer:
                         own_s,
                         own_p,
                         stddev,
+                        optimal_s,
+                        leverage_s,
                         stack_str,
                     )
                 f.write("%s\n" % lineup_str)
 
         print("Output done.")
+
+        #alxs1234: added optimal_s & leverage_s to output & calc step
 
     def sort_lineup(self, lineup):
         copy_lineup = copy.deepcopy(lineup)
