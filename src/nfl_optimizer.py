@@ -214,7 +214,7 @@ class NFL_Optimizer:
                 bust = own = float(row["bust%"].replace("%", ""))
                 if bust == "" or bust == 0:
                     bust = 0
-                #alxs1234: End Add Custom
+                #alxs1234: End Add Custom Columns
 
                 own = float(row["own%"].replace("%", ""))
                 if own == 0:
